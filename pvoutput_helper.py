@@ -1,0 +1,70 @@
+import datetime
+import json
+import os
+import re
+import time
+import urllib
+from dataclasses import asdict
+
+import dateutil
+import pandas as pd
+import requests
+
+from livoltek_file import LivoltekFile
+from livoltek_line import LivoltekLine
+
+
+def batch(x, bs) -> []:
+    return [x[i : i + bs] for i in range(0, len(x), bs)]
+
+
+def push_to_pvoutput(file: LivoltekFile, pvoutputApiKey, pvoutputSystemId, pvoutputUrl):
+    lines = file.livoltekLines
+    line_batches = batch(lines, 30)
+    for line_batch in line_batches:
+        if line_batch:
+            push_to_pvoutput_batched(
+                line_batch, pvoutputApiKey, pvoutputSystemId, pvoutputUrl
+            )
+
+
+def push_to_pvoutput_batched(
+    line_batch: [LivoltekLine], pvoutputApiKey, pvoutputSystemId, pvoutputUrl
+):
+    start = line_batch[0].date
+    end = line_batch[-1].date
+
+    headers = {
+        "X-Pvoutput-Apikey": pvoutputApiKey,
+        "X-Pvoutput-SystemId": pvoutputSystemId,
+        "Content-type": "application/x-www-form-urlencoded",
+        "Accept": "text/plain",
+    }
+
+    pvoutputdata = "data="
+    line: LivoltekLine
+    for line in line_batch:
+        date = line.date
+        date_str = date.strftime("%Y%m%d")
+        hour_str = date.strftime("%H:%M")
+        pv1_watts = line.pv1Power * 1000
+        load_watts = line.loadPower * 1000
+        battery_min_temp = line.batteryMinTemperature
+        pv1_voltage = line.pv1Voltage
+
+        s = f"{date_str},{hour_str},,{pv1_watts},,{load_watts},{battery_min_temp},{pv1_voltage};"
+        pvoutputdata += s
+    if pvoutputdata.endswith(";"):
+        pvoutputdata = pvoutputdata[:-1]
+    print(pvoutputdata)
+
+    # pvoutput_result = requests.post(
+    #     pvoutputUrl,
+    #     data=pvoutputdata,
+    #     headers=headers,
+    # )
+    # print("PvOutput response", pvoutput_result.status_code, "start", start, "end", end)
+
+    # if pvoutput_result.status_code != 200:
+    #     print("Error posting to PvOutput")
+    #     return
