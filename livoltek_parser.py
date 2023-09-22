@@ -37,7 +37,7 @@ class LivoltekParser:
 
     @staticmethod
     def process_file(file_name):
-        logger.info("importing file %s", file_name)
+        logger.info("Processing file %s", file_name)
         timestamp = str(datetime.datetime.now().timestamp())
         df = pd.read_excel(file_name, skiprows=[0])
         lines = []
