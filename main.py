@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 from influxdb_helper import push_to_influxdb
 from livoltek_file import LivoltekFile
-from livoltek_parser import process_file
+from livoltek_parser import LivoltekParser
 from pvoutput_helper import push_to_pvoutput
 
 config = configparser.ConfigParser()
@@ -35,7 +35,7 @@ for file_name in os.listdir():
     pattern = fileRegexPattern
     if re.match(pattern=pattern, string=file_name):
         timestamp = str(datetime.datetime.now().timestamp())
-        ll_file: LivoltekFile = process_file(file_name)
+        ll_file: LivoltekFile = LivoltekParser.process_file(file_name)
         if archiveFolderName:
             newname = f"{archiveFolderName}/{timestamp}.{file_name}"
             print("renaming to", newname)
