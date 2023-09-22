@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import os
 import re
 import time
@@ -11,6 +12,8 @@ import requests
 
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine
+
+logger = logging.getLogger(__name__)
 
 
 class LivoltekParser:
@@ -34,7 +37,7 @@ class LivoltekParser:
 
     @staticmethod
     def process_file(file_name):
-        print("importing file", file_name)
+        logger.info("importing file %s", file_name)
         timestamp = str(datetime.datetime.now().timestamp())
         df = pd.read_excel(file_name, skiprows=[0])
         lines = []

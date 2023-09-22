@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import os
 import re
 import time
@@ -12,6 +13,8 @@ import requests
 
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine
+
+logger = logging.getLogger()
 
 
 class PVOutputHelper:
@@ -27,6 +30,7 @@ class PVOutputHelper:
     def push_to_pvoutput(self, file: LivoltekFile):
         lines = file.livoltekLines
         line_batches = PVOutputHelper.batch(lines, 30)
+        logger.info("%s batches to push", len(line_batches))
         for line_batch in line_batches:
             if line_batch:
                 self.push_to_pvoutput_batched(line_batch)
@@ -63,10 +67,15 @@ class PVOutputHelper:
             data=pvoutputdata,
             headers=headers,
         )
-        print(
-            "PvOutput response", pvoutput_result.status_code, "start", start, "end", end
+        logger.info(
+            "PvOutput response %s %s %s %s %s",
+            pvoutput_result.status_code,
+            "start",
+            start,
+            "end",
+            end,
         )
 
         if pvoutput_result.status_code != 200:
-            print("Error posting to PvOutput")
+            logger.info("Error posting to PvOutput")
             return

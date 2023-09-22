@@ -9,3 +9,6 @@ isort:
 	python -m isort .
 
 clean: black isort
+
+run:
+	python main.py

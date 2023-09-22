@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import os
 import re
 import time
@@ -15,6 +16,8 @@ from influxdb.exceptions import InfluxDBClientError
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine
 
+logger = logging.getLogger()
+
 
 class InfluxDBHelper:
     def __init__(
@@ -24,7 +27,6 @@ class InfluxDBHelper:
         self.influxdbPort = influxdbPort
         self.influxdbDatabase = influxdbDatabase
         self.influxdbMeasurement = influxdbMeasurement
-        # print(self.influxdbHost, self.influxdbPort, self.influxdbDatabase, self.influxdbMeasurement, type(self.influxdbMeasurement), type(self.influxdbPort))
         self.client = InfluxDBClient(host=self.influxdbHost, port=self.influxdbPort)
         self.client.switch_database(self.influxdbDatabase)
 
@@ -58,7 +60,7 @@ class InfluxDBHelper:
 
         try:
             result = self.client.write_points(points)
+            logger.info(result)
         except InfluxDBClientError as e:
-            # print(points)
-            print(str(e))
+            logger.info(str(e))
             raise

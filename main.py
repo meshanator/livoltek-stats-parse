@@ -1,5 +1,6 @@
 import configparser
 import datetime
+import logging
 import os
 import re
 from dataclasses import asdict
@@ -8,6 +9,11 @@ from influxdb_helper import InfluxDBHelper
 from livoltek_file import LivoltekFile
 from livoltek_parser import LivoltekParser
 from pvoutput_helper import PVOutputHelper
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 config = configparser.ConfigParser()
 config.sections()
@@ -20,6 +26,7 @@ archiveFolderName = config["general"]["ArchiveFolderName"]
 influxdbEnabled = config["influxdb"]["Enabled"]
 pvoutputEnabled = config["pvoutput"]["Enabled"]
 
+logger.info("Starting run")
 
 if overrideDirectory:
     os.chdir(overrideDirectory)
@@ -31,7 +38,7 @@ for file_name in os.listdir():
         ll_file: LivoltekFile = LivoltekParser.process_file(file_name)
         if archiveFolderName:
             newname = f"{archiveFolderName}/{timestamp}.{file_name}"
-            print("renaming to", newname)
+            logger.info("Renaming to %s", newname)
             os.rename(file_name, newname)
 
         if influxdbEnabled:
