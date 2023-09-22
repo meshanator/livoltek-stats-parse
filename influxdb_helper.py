@@ -9,6 +9,8 @@ from dataclasses import asdict
 import dateutil
 import pandas as pd
 import requests
+from influxdb import InfluxDBClient
+from influxdb.exceptions import InfluxDBClientError
 
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine
@@ -22,6 +24,9 @@ class InfluxDBHelper:
         self.influxdbPort = influxdbPort
         self.influxdbDatabase = influxdbDatabase
         self.influxdbMeasurement = influxdbMeasurement
+        # print(self.influxdbHost, self.influxdbPort, self.influxdbDatabase, self.influxdbMeasurement, type(self.influxdbMeasurement), type(self.influxdbPort))
+        self.client = InfluxDBClient(host=self.influxdbHost, port=self.influxdbPort)
+        self.client.switch_database(self.influxdbDatabase)
 
     def push_to_influxdb(
         self,
@@ -36,21 +41,24 @@ class InfluxDBHelper:
             fields = asdict(line)
             fields["time"] = ts
 
+            # TODO
+            del fields["date"]
+
             point = {
                 "measurement": self.influxdbMeasurement,
                 "time": ts,
-                "tags": {"Datetime": line.date, "Running Status": running_status},
+                "tags": {
+                    "Datetime": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "Running Status": running_status,
+                },
                 "fields": fields,
-                "date": line.date,
+                "date": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
             }
             points.append(point)
 
-        # print(points)
-        # try:
-        #     result = client.write_points(points)
-        # except InfluxDBClientError as e:
-        #     # print(points)
-        #     print(str(e))
-        #     raise
-
-        pass
+        try:
+            result = self.client.write_points(points)
+        except InfluxDBClientError as e:
+            # print(points)
+            print(str(e))
+            raise

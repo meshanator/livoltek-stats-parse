@@ -4,10 +4,10 @@ import os
 import re
 from dataclasses import asdict
 
-from influxdb_helper import push_to_influxdb
+from influxdb_helper import InfluxDBHelper
 from livoltek_file import LivoltekFile
 from livoltek_parser import LivoltekParser
-from pvoutput_helper import push_to_pvoutput
+from pvoutput_helper import PVOutputHelper
 
 config = configparser.ConfigParser()
 config.sections()
@@ -18,15 +18,8 @@ fileRegexPattern = config["general"]["FileRegexPattern"]
 archiveFolderName = config["general"]["ArchiveFolderName"]
 
 influxdbEnabled = config["influxdb"]["Enabled"]
-influxdbHost = config["influxdb"]["Host"]
-influxdbPort = config["influxdb"]["Port"]
-influxdbDatabase = config["influxdb"]["Database"]
-influxdbMeasurement = config["influxdb"]["Measurement"]
-
 pvoutputEnabled = config["pvoutput"]["Enabled"]
-pvoutputApiKey = config["pvoutput"]["ApiKey"]
-pvoutputSystemId = config["pvoutput"]["SystemId"]
-pvoutputUrl = config["pvoutput"]["Url"]
+
 
 if overrideDirectory:
     os.chdir(overrideDirectory)
@@ -42,13 +35,26 @@ for file_name in os.listdir():
             os.rename(file_name, newname)
 
         if influxdbEnabled:
-            push_to_influxdb(
-                ll_file,
+            influxdbHost = config["influxdb"]["Host"]
+            influxdbPort = int(config["influxdb"]["Port"])
+            influxdbDatabase = config["influxdb"]["Database"]
+            influxdbMeasurement = config["influxdb"]["Measurement"]
+
+            influxDBHelper = InfluxDBHelper(
                 influxdbHost,
                 influxdbPort,
                 influxdbDatabase,
                 influxdbMeasurement,
             )
+            influxDBHelper.push_to_influxdb(
+                ll_file,
+            )
 
         if pvoutputEnabled:
-            push_to_pvoutput(ll_file, pvoutputApiKey, pvoutputSystemId, pvoutputUrl)
+            pvoutputApiKey = config["pvoutput"]["ApiKey"]
+            pvoutputSystemId = config["pvoutput"]["SystemId"]
+            pvoutputUrl = config["pvoutput"]["Url"]
+            pVOutputHelper = PVOutputHelper(
+                pvoutputApiKey, pvoutputSystemId, pvoutputUrl
+            )
+            pVOutputHelper.push_to_pvoutput(ll_file)

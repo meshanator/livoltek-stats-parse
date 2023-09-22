@@ -29,7 +29,7 @@ class PVOutputHelper:
         line_batches = PVOutputHelper.batch(lines, 30)
         for line_batch in line_batches:
             if line_batch:
-                push_to_pvoutput_batched(line_batch)
+                self.push_to_pvoutput_batched(line_batch)
 
     def push_to_pvoutput_batched(self, line_batch: [LivoltekLine]):
         start = line_batch[0].date
@@ -57,15 +57,16 @@ class PVOutputHelper:
             pvoutputdata += s
         if pvoutputdata.endswith(";"):
             pvoutputdata = pvoutputdata[:-1]
-        print(pvoutputdata)
 
-        # pvoutput_result = requests.post(
-        #     self.pvoutputUrl,
-        #     data=pvoutputdata,
-        #     headers=headers,
-        # )
-        # print("PvOutput response", pvoutput_result.status_code, "start", start, "end", end)
+        pvoutput_result = requests.post(
+            self.pvoutputUrl,
+            data=pvoutputdata,
+            headers=headers,
+        )
+        print(
+            "PvOutput response", pvoutput_result.status_code, "start", start, "end", end
+        )
 
-        # if pvoutput_result.status_code != 200:
-        #     print("Error posting to PvOutput")
-        #     return
+        if pvoutput_result.status_code != 200:
+            print("Error posting to PvOutput")
+            return
