@@ -1,3 +1,5 @@
+#!python
+
 import configparser
 import datetime
 import logging
@@ -10,62 +12,68 @@ from livoltek_file import LivoltekFile
 from livoltek_parser import LivoltekParser
 from pvoutput_helper import PVOutputHelper
 
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
 
-config = configparser.ConfigParser()
-config.sections()
-config.read("config.ini")
+def main():
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+    )
+    logger = logging.getLogger(__name__)
 
-overrideDirectory = config["general"]["OverrideDirectory"]
-fileRegexPattern = config["general"]["FileRegexPattern"]
-archiveFolderName = config["general"]["ArchiveFolderName"]
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read("config.ini")
 
-influxdbEnabled = config.getboolean("influxdb", "Enabled")
-pvoutputEnabled = config.getboolean("pvoutput", "Enabled")
+    overrideDirectory = config["general"]["OverrideDirectory"]
+    fileRegexPattern = config["general"]["FileRegexPattern"]
+    archiveFolderName = config["general"]["ArchiveFolderName"]
 
-logger.info(
-    "Starting run, influxdbEnabled: %s, pvoutputEnabled: %s",
-    influxdbEnabled,
-    pvoutputEnabled,
-)
+    influxdbEnabled = config.getboolean("influxdb", "Enabled")
+    pvoutputEnabled = config.getboolean("pvoutput", "Enabled")
 
-if overrideDirectory:
-    os.chdir(overrideDirectory)
+    logger.info(
+        "Starting run, influxdbEnabled: %s, pvoutputEnabled: %s",
+        influxdbEnabled,
+        pvoutputEnabled,
+    )
 
-for file_name in os.listdir():
-    pattern = fileRegexPattern
-    if re.match(pattern=pattern, string=file_name):
-        timestamp = str(datetime.datetime.now().timestamp())
-        ll_file: LivoltekFile = LivoltekParser.process_file(file_name)
-        if archiveFolderName:
-            newname = f"{archiveFolderName}/{timestamp}.{file_name}"
-            logger.info("Renaming to %s", newname)
-            os.rename(file_name, newname)
+    if overrideDirectory:
+        os.chdir(overrideDirectory)
 
-        if influxdbEnabled:
-            influxdbHost = config["influxdb"]["Host"]
-            influxdbPort = int(config["influxdb"]["Port"])
-            influxdbDatabase = config["influxdb"]["Database"]
-            influxdbMeasurement = config["influxdb"]["Measurement"]
+    for file_name in os.listdir():
+        pattern = fileRegexPattern
+        if re.match(pattern=pattern, string=file_name):
+            timestamp = str(datetime.datetime.now().timestamp())
+            ll_file: LivoltekFile = LivoltekParser.process_file(file_name)
+            if archiveFolderName:
+                newname = f"{archiveFolderName}/{timestamp}.{file_name}"
+                logger.info("Renaming to %s", newname)
+                os.rename(file_name, newname)
 
-            influxDBHelper = InfluxDBHelper(
-                influxdbHost,
-                influxdbPort,
-                influxdbDatabase,
-                influxdbMeasurement,
-            )
-            influxDBHelper.push_to_influxdb(
-                ll_file,
-            )
+            if influxdbEnabled:
+                influxdbHost = config["influxdb"]["Host"]
+                influxdbPort = int(config["influxdb"]["Port"])
+                influxdbDatabase = config["influxdb"]["Database"]
+                influxdbMeasurement = config["influxdb"]["Measurement"]
 
-        if pvoutputEnabled:
-            pvoutputApiKey = config["pvoutput"]["ApiKey"]
-            pvoutputSystemId = config["pvoutput"]["SystemId"]
-            pvoutputUrl = config["pvoutput"]["Url"]
-            pVOutputHelper = PVOutputHelper(
-                pvoutputApiKey, pvoutputSystemId, pvoutputUrl
-            )
-            pVOutputHelper.push_to_pvoutput(ll_file)
+                influxDBHelper = InfluxDBHelper(
+                    influxdbHost,
+                    influxdbPort,
+                    influxdbDatabase,
+                    influxdbMeasurement,
+                )
+                influxDBHelper.push_to_influxdb(
+                    ll_file,
+                )
+
+            if pvoutputEnabled:
+                pvoutputApiKey = config["pvoutput"]["ApiKey"]
+                pvoutputSystemId = config["pvoutput"]["SystemId"]
+                pvoutputUrl = config["pvoutput"]["Url"]
+                pVOutputHelper = PVOutputHelper(
+                    pvoutputApiKey, pvoutputSystemId, pvoutputUrl
+                )
+                pVOutputHelper.push_to_pvoutput(ll_file)
+
+
+if __name__ == "__main__":
+    main()
