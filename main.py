@@ -23,10 +23,14 @@ overrideDirectory = config["general"]["OverrideDirectory"]
 fileRegexPattern = config["general"]["FileRegexPattern"]
 archiveFolderName = config["general"]["ArchiveFolderName"]
 
-influxdbEnabled = config["influxdb"]["Enabled"]
-pvoutputEnabled = config["pvoutput"]["Enabled"]
+influxdbEnabled = config.getboolean("influxdb", "Enabled")
+pvoutputEnabled = config.getboolean("pvoutput", "Enabled")
 
-logger.info("Starting run")
+logger.info(
+    "Starting run, influxdbEnabled: %s, pvoutputEnabled: %s",
+    influxdbEnabled,
+    pvoutputEnabled,
+)
 
 if overrideDirectory:
     os.chdir(overrideDirectory)
