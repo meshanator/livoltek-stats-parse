@@ -61,6 +61,6 @@ class InfluxDBHelper:
         try:
             result = self.client.write_points(points)
             logger.info(result)
-        except InfluxDBClientError as e:
-            logger.info(str(e))
+        except InfluxDBClientError:
+            logger.exception("error pushing to influxdb")
             raise
