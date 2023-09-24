@@ -1,14 +1,8 @@
 import datetime
-import json
 import logging
-import os
-import re
-import time
-import urllib
 
 import dateutil
 import pandas as pd
-import requests
 
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine

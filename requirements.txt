@@ -1,2 +1,7 @@
+pandas
+influxdb
+requests
+
+# dev
 isort
 black

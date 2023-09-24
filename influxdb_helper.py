@@ -2,14 +2,11 @@ import datetime
 import json
 import logging
 import os
-import re
 import time
 import urllib
 from dataclasses import asdict
 
 import dateutil
-import pandas as pd
-import requests
 from influxdb import InfluxDBClient
 from influxdb.exceptions import InfluxDBClientError
 

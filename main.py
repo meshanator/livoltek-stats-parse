@@ -5,7 +5,6 @@ import datetime
 import logging
 import os
 import re
-from dataclasses import asdict
 
 from influxdb_helper import InfluxDBHelper
 from livoltek_file import LivoltekFile
