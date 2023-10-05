@@ -27,6 +27,9 @@ class InfluxDBHelper:
         self.client = InfluxDBClient(host=self.influxdbHost, port=self.influxdbPort)
         self.client.switch_database(self.influxdbDatabase)
 
+    def ping(self):
+        self.client.ping()
+
     def push_to_influxdb(
         self,
         file: LivoltekFile,

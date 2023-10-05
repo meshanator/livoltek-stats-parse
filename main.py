@@ -43,10 +43,6 @@ def main():
         if re.match(pattern=pattern, string=file_name):
             timestamp = str(datetime.datetime.now().timestamp())
             ll_file: LivoltekFile = LivoltekParser.process_file(file_name)
-            if archiveFolderName:
-                newname = f"{archiveFolderName}/{timestamp}.{file_name}"
-                logger.info("Renaming to %s", newname)
-                os.rename(file_name, newname)
 
             if influxdbEnabled:
                 influxdbHost = config["influxdb"]["Host"]
@@ -60,6 +56,7 @@ def main():
                     influxdbDatabase,
                     influxdbMeasurement,
                 )
+                influxDBHelper.ping()
                 influxDBHelper.push_to_influxdb(
                     ll_file,
                 )
@@ -72,6 +69,11 @@ def main():
                     pvoutputApiKey, pvoutputSystemId, pvoutputUrl
                 )
                 pVOutputHelper.push_to_pvoutput(ll_file)
+
+            if archiveFolderName:
+                newname = f"{archiveFolderName}/{timestamp}.{file_name}"
+                logger.info("Renaming to %s", newname)
+                os.rename(file_name, newname)
 
 
 if __name__ == "__main__":
