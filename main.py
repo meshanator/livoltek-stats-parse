@@ -46,18 +46,20 @@ def main():
 
             if influxdbEnabled:
                 influxdbHost = config["influxdb"]["Host"]
-                influxdbPort = int(config["influxdb"]["Port"])
-                influxdbDatabase = config["influxdb"]["Database"]
+                influxdbToken = config["influxdb"]["Token"]
+                influxdbOrg = config["influxdb"]["Org"]
+                influxdbBucket = config["influxdb"]["Bucket"]
                 influxdbMeasurement = config["influxdb"]["Measurement"]
 
                 influxDBHelper = InfluxDBHelper(
                     influxdbHost,
-                    influxdbPort,
-                    influxdbDatabase,
+                    influxdbToken,
+                    influxdbOrg,
+                    influxdbBucket,
                     influxdbMeasurement,
                 )
                 influxDBHelper.ping()
-                influxDBHelper.push_to_influxdb(
+                influxDBHelper.push_to_influxdb_v2(
                     ll_file,
                 )
 
