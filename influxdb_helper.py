@@ -7,7 +7,7 @@ import urllib
 from dataclasses import asdict
 
 import dateutil
-from influxdb_client import InfluxDBClient, Point
+from influxdb_client import InfluxDBClient, Point, WriteOptions
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from livoltek_file import LivoltekFile
@@ -33,7 +33,10 @@ class InfluxDBHelper:
         self.client = InfluxDBClient(
             url=self.influxdbHost, token=self.influxdbToken, org=self.influxdbOrg
         )
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        self.write_options = WriteOptions(
+            batch_size=200, flush_interval=10_000, retry_interval=5_000
+        )
+        self.write_api = self.client.write_api(write_options=self.write_options)
 
     def ping(self):
         self.client.ping()
@@ -65,8 +68,9 @@ class InfluxDBHelper:
                 "date": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
             }
             point = Point.from_dict(point_dict)
-            result = self.write_api.write(bucket=self.influxdbBucket, record=point)
-            logger.info(result)
+            points.append(point)
+        result = self.write_api.write(bucket=self.influxdbBucket, record=points)
+        logger.info(result)
 
     def push_to_influxdb_v1(
         self,
