@@ -1,7 +1,8 @@
 pandas
-# influxdb
 influxdb-client
 requests
+python-dateutil
+pytz
 
 # dev
 isort

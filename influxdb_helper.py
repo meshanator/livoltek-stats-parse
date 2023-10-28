@@ -33,10 +33,7 @@ class InfluxDBHelper:
         self.client = InfluxDBClient(
             url=self.influxdbHost, token=self.influxdbToken, org=self.influxdbOrg
         )
-        self.write_options = WriteOptions(
-            batch_size=200, flush_interval=10_000, retry_interval=5_000
-        )
-        self.write_api = self.client.write_api(write_options=self.write_options)
+        self.write_options = WriteOptions()
 
     def ping(self):
         self.client.ping()
@@ -49,7 +46,7 @@ class InfluxDBHelper:
         line: LivoltekLine
         for line in file.livoltekLines:
             running_status = line.runningStatus
-            ts = line.date.strftime("%Y-%m-%dT%H:%M:%SZ")
+            ts = line.date.strftime("%Y-%m-%dT%H:%M:%S%z")
 
             fields = asdict(line)
             fields["time"] = ts
@@ -61,48 +58,18 @@ class InfluxDBHelper:
                 "measurement": self.influxdbMeasurement,
                 "time": ts,
                 "tags": {
-                    "Datetime": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "Datetime": line.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
                     "Running Status": running_status,
                 },
                 "fields": fields,
-                "date": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "date": line.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
             }
             point = Point.from_dict(point_dict)
             points.append(point)
-        result = self.write_api.write(bucket=self.influxdbBucket, record=points)
-        logger.info(result)
 
-    def push_to_influxdb_v1(
-        self,
-        file: LivoltekFile,
-    ):
-        points = []
-        line: LivoltekLine
-        for line in file.livoltekLines:
-            running_status = line.runningStatus
-            ts = line.date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        # for inflluxdb v1
+        # self.client.write_points(points)
 
-            fields = asdict(line)
-            fields["time"] = ts
-
-            # TODO
-            del fields["date"]
-
-            point = {
-                "measurement": self.influxdbMeasurement,
-                "time": ts,
-                "tags": {
-                    "Datetime": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "Running Status": running_status,
-                },
-                "fields": fields,
-                "date": line.date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            }
-            points.append(point)
-
-        try:
-            result = self.client.write_points(points)
-            logger.info(result)
-        except InfluxDBClientError:
-            logger.exception("error pushing to influxdb")
-            raise
+        with self.client.write_api(write_options=self.write_options) as client:
+            logger.info("sending batch of %s to influxdb", len(points))
+            client.write(bucket=self.influxdbBucket, record=points)

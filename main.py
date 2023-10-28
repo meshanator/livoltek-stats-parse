@@ -24,6 +24,7 @@ def main():
 
     overrideDirectory = config["general"]["OverrideDirectory"]
     fileRegexPattern = config["general"]["FileRegexPattern"]
+    archive = config.getboolean("general", "Archive")
     archiveFolderName = config["general"]["ArchiveFolderName"]
 
     influxdbEnabled = config.getboolean("influxdb", "Enabled")
@@ -72,7 +73,7 @@ def main():
                 )
                 pVOutputHelper.push_to_pvoutput(ll_file)
 
-            if archiveFolderName:
+            if archive and archiveFolderName:
                 newname = f"{archiveFolderName}/{timestamp}.{file_name}"
                 logger.info("Renaming to %s", newname)
                 os.rename(file_name, newname)

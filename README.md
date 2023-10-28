@@ -1,6 +1,6 @@
 # livoltek-stats-parse
 Parses the stats produced by the livoltek hyper-5000 solar inverter using python3.
-Pushes to influxdb (for grafana) and pvoutput.
+Pushes to influxdb2 (for grafana) and pvoutput.
 
 # Links
 - https://pvoutput.org/help/api_specification.html#api-add-batch-status-data-structure

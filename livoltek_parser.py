@@ -3,6 +3,7 @@ import logging
 
 import dateutil
 import pandas as pd
+import pytz
 
 from livoltek_file import LivoltekFile
 from livoltek_line import LivoltekLine
@@ -30,9 +31,12 @@ class LivoltekParser:
         return value
 
     @staticmethod
+    def tz_sast(offset):
+        return dateutil.tz.tzoffset("SAST", 7200)  # 7200 seconds = 2 hours
+
+    @staticmethod
     def process_file(file_name):
         logger.info("Processing file %s", file_name)
-        timestamp = str(datetime.datetime.now().timestamp())
         df = pd.read_excel(file_name, skiprows=[0])
         lines = []
         for row_index in df.index:
@@ -43,13 +47,11 @@ class LivoltekParser:
             ):
                 continue
 
+            # change to local TZ
+            sast = pytz.timezone("Africa/Johannesburg")
             row_datetime = df["Datetime"][row_index]
-            # running_status = df["Running Status"][row_index]
-            date = dateutil.parser.parse(row_datetime)
-            # ts = date.strftime("%Y-%m-%dT%H:%M:%SZ")
+            date = dateutil.parser.parse(row_datetime).astimezone(sast)
 
-            # fields = {"time": ts}
-            # print(df.keys())
             line = LivoltekLine(
                 date=date,
                 runningStatus=LivoltekParser.parse_value(
