@@ -63,6 +63,7 @@ def main():
                 influxDBHelper.push_to_influxdb_v2(
                     ll_file,
                 )
+                influxDBHelper.close()  # Ensure proper shutdown
 
             if pvoutputEnabled:
                 pvoutputApiKey = config["pvoutput"]["ApiKey"]

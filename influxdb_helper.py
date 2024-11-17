@@ -1,75 +1,54 @@
-import datetime
-import json
 import logging
-import os
-import time
-import urllib
 from dataclasses import asdict
-
-import dateutil
 from influxdb_client import InfluxDBClient, Point, WriteOptions
-from influxdb_client.client.write_api import SYNCHRONOUS
-
-from livoltek_file import LivoltekFile
-from livoltek_line import LivoltekLine
 
 logger = logging.getLogger()
 
-
 class InfluxDBHelper:
-    def __init__(
-        self,
-        influxdbHost,
-        influxdbToken,
-        influxdbOrg,
-        influxdbBucket,
-        influxdbMeasurement,
-    ):
+    def __init__(self, influxdbHost, influxdbToken, influxdbOrg, influxdbBucket, influxdbMeasurement):
         self.influxdbHost = influxdbHost
         self.influxdbToken = influxdbToken
         self.influxdbOrg = influxdbOrg
         self.influxdbBucket = influxdbBucket
         self.influxdbMeasurement = influxdbMeasurement
-        self.client = InfluxDBClient(
-            url=self.influxdbHost, token=self.influxdbToken, org=self.influxdbOrg
-        )
-        self.write_options = WriteOptions()
+        
+        # Use batching and async writes for better performance
+        self.client = InfluxDBClient(url=self.influxdbHost, token=self.influxdbToken, org=self.influxdbOrg)
+        self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=1000, flush_interval=1000, jitter_interval=200, retry_interval=5000))
 
     def ping(self):
-        self.client.ping()
+        return self.client.ping()
 
-    def push_to_influxdb_v2(
-        self,
-        file: LivoltekFile,
-    ):
+    def push_to_influxdb_v2(self, file):
         points = []
-        line: LivoltekLine
+
         for line in file.livoltekLines:
-            running_status = line.runningStatus
-            ts = line.date.strftime("%Y-%m-%dT%H:%M:%S%z")
-
             fields = asdict(line)
-            fields["time"] = ts
 
-            # TODO
-            del fields["date"]
+            # Remove fields that don't need to be written
+            ts = line.date.isoformat()  # ISO 8601 is preferred
+            del fields['date']
 
-            point_dict = {
-                "measurement": self.influxdbMeasurement,
-                "time": ts,
-                "tags": {
-                    "Datetime": line.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                    "Running Status": running_status,
-                },
-                "fields": fields,
-                "date": line.date.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            }
-            point = Point.from_dict(point_dict)
+            # Create the point
+            point = Point(self.influxdbMeasurement)\
+                .time(ts)\
+                .tag("Datetime", ts)\
+                .tag("Running Status", line.runningStatus)
+
+            # Add fields dynamically
+            for field_name, field_value in fields.items():
+                point = point.field(field_name, field_value)
+
             points.append(point)
 
-        # for inflluxdb v1
-        # self.client.write_points(points)
+        # Send in batches
+        if points:
+            logger.info("Sending batch of %d points to InfluxDB", len(points))
+            self.write_api.write(bucket=self.influxdbBucket, record=points)
 
-        with self.client.write_api(write_options=self.write_options) as client:
-            logger.info("sending batch of %s to influxdb", len(points))
-            client.write(bucket=self.influxdbBucket, record=points)
+    def close(self):
+        # Flush any remaining points in the write API before closing
+        logger.info("Flushing and closing the InfluxDB client...")
+        self.write_api.flush()
+        self.write_api.close()
+        self.client.close()

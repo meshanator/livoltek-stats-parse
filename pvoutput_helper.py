@@ -77,5 +77,5 @@ class PVOutputHelper:
         )
 
         if pvoutput_result.status_code != 200:
-            logger.info("Error posting to PvOutput")
+            logger.info("Error posting to PvOutput %s", pvoutput_result.text)
             return
